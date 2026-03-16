@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="google-site-verification" content="vpIS4AMFZjl61vwjnsuaFHgQU1PLEHsVEFNRPxsPsJs" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CVBuilder Pro — Build a Winning Resume</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -691,7 +692,7 @@ textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.6; }
       <div class="modal-feature"><span class="chk">★</span> All 3 professional templates</div>
       <div class="modal-feature"><span class="chk">★</span> AI improvement suggestions</div>
       <div class="modal-feature"><span class="chk">★</span> Resume score & analysis</div>
-      <div class="modal-feature"><span class="chk">★</span> Unlimited PDF downloads</div>
+      <div class="modal-feature"><span class="chk">★</span> Watermark-free PDF downloads</div>
       <div class="modal-feature"><span class="chk">★</span> Cover letter template</div>
     </div>
     <div class="unlock-row">
@@ -954,8 +955,11 @@ textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.6; }
 
     <div class="improve-box" id="ai-tips-box">
       <div class="improve-title">🤖 AI Suggestions</div>
-      <div class="improve-desc">Personalized tips based on your resume content.</div>
-      <div id="ai-tips-list"></div>
+      <div class="improve-desc">Real AI feedback powered by Claude — personalized to your exact resume.</div>
+      <div id="ai-tips-list">
+        <div style="color:var(--text3);font-size:0.85rem;text-align:center;padding:20px">Click the button below to get your AI feedback!</div>
+      </div>
+      <button class="btn-primary" id="ai-analyze-btn" onclick="getAISuggestions()" style="width:100%;margin-top:16px">✨ Analyze My Resume with AI</button>
     </div>
 
     <div class="improve-box">
@@ -1041,7 +1045,7 @@ textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.6; }
 // STATE
 // ============================================================
 const OWNER_CODE = 'CVBUILDER2024';
-const GUMROAD_LINK = 'https://gumroad.com/l/cvbuilderpro';
+const GUMROAD_LINK = 'https://shaheer62.gumroad.com/l/hqjkj';
 const APP_URL = 'https://sheroo6211.github.io/CVBuilderPro';
 const APP_MSG = 'Build a professional resume for free with CVBuilder Pro! Beautiful templates, AI tips, PDF download. 🚀';
 
@@ -1443,30 +1447,7 @@ function updateImproveSection() {
     </div>
   `).join('');
 
-  // AI Tips
-  const tips = [];
-  if (!cvData.first || !cvData.last) tips.push({ type: 'bad', text: 'Add your full name to the Personal Info section' });
-  if (!cvData.email) tips.push({ type: 'bad', text: 'Add your email address — recruiters need this to contact you' });
-  if (!cvData.phone) tips.push({ type: 'bad', text: 'Add your phone number for direct contact' });
-  if (!cvData.title) tips.push({ type: 'bad', text: 'Add a professional job title — it tells recruiters your role at a glance' });
-  if (!cvData.summary) tips.push({ type: 'bad', text: 'Add a professional summary — it\'s the first thing recruiters read' });
-  if (cvData.summary && cvData.summary.length < 80) tips.push({ type: 'bad', text: 'Your summary is too short — aim for 2-3 sentences describing your experience and value' });
-  if (cvData.experience.length === 0) tips.push({ type: 'bad', text: 'Add at least one work experience entry' });
-  if (cvData.experience.some(e => !e.desc)) tips.push({ type: 'bad', text: 'Add descriptions to your experience entries — mention specific achievements and numbers' });
-  if (cvData.skills.length < 5) tips.push({ type: 'bad', text: `Add more skills — you have ${cvData.skills.length}, aim for at least 5-8 relevant skills` });
-  if (cvData.skills.length >= 5) tips.push({ type: 'good', text: 'Great skill count! Your skills section looks well-rounded' });
-  if (cvData.experience.length >= 2) tips.push({ type: 'good', text: 'Multiple experience entries make your CV much stronger' });
-  if (cvData.summary && cvData.summary.length >= 80) tips.push({ type: 'good', text: 'Your summary is well-written and the right length' });
-  if (!cvData.linkedin) tips.push({ type: 'bad', text: 'Add your LinkedIn profile — 80% of recruiters check LinkedIn before interviewing' });
-  if (score >= 80) tips.push({ type: 'good', text: '🎉 Excellent score! Your CV is strong and ready to send' });
-
-  const tipsEl = document.getElementById('ai-tips-list');
-  tipsEl.innerHTML = tips.slice(0, 8).map(t => `
-    <div class="tip-item ${t.type}">
-      <span class="tip-icon">${t.type === 'good' ? '✓' : '✗'}</span>
-      <span>${t.text}</span>
-    </div>
-  `).join('');
+  // AI tips are now loaded on demand via getAISuggestions()
 
   // ATS Checklist
   const atsEl = document.getElementById('ats-checklist');
@@ -1489,20 +1470,103 @@ function updateImproveSection() {
 }
 
 // ============================================================
-// PDF DOWNLOAD
+// REAL AI SUGGESTIONS (Claude API)
 // ============================================================
+async function getAISuggestions() {
+  syncFormToData();
+
+  const btn = document.getElementById('ai-analyze-btn');
+  const tipsEl = document.getElementById('ai-tips-list');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyzing your resume...';
+  tipsEl.innerHTML = `<div style="color:var(--text3);font-size:0.85rem;text-align:center;padding:24px">
+    <div style="font-size:1.5rem;margin-bottom:8px">🤖</div>
+    Claude is reading your resume and generating personalized feedback...
+  </div>`;
+
+  const resumeText = `
+Name: ${cvData.first} ${cvData.last}
+Title: ${cvData.title}
+Email: ${cvData.email}
+Phone: ${cvData.phone}
+Location: ${cvData.location}
+LinkedIn: ${cvData.linkedin}
+
+Summary: ${cvData.summary}
+
+Experience:
+${cvData.experience.map(e => `- ${e.role} at ${e.company} (${e.start} - ${e.end})\n  ${e.desc}`).join('\n')}
+
+Education:
+${cvData.education.map(e => `- ${e.degree} in ${e.field} from ${e.school} (${e.year})`).join('\n')}
+
+Skills: ${cvData.skills.join(', ')}
+  `.trim();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are an expert resume coach and recruiter with 15 years of experience. Analyze the resume provided and give 6-8 specific, actionable tips. 
+        
+Respond ONLY with a valid JSON array, no markdown, no backticks, no extra text. Format:
+[
+  {"type": "good", "text": "specific positive observation"},
+  {"type": "bad", "text": "specific improvement suggestion"},
+  ...
+]
+
+Use "good" for strengths and "bad" for improvements needed. Be specific to THEIR actual resume content — mention their actual job titles, companies, skills. Do not give generic advice.`,
+        messages: [{ role: 'user', content: `Please analyze this resume:\n\n${resumeText}` }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content.map(i => i.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const tips = JSON.parse(clean);
+
+    tipsEl.innerHTML = tips.map(t => `
+      <div class="tip-item ${t.type}">
+        <span class="tip-icon">${t.type === 'good' ? '✓' : '✗'}</span>
+        <span>${t.text}</span>
+      </div>
+    `).join('');
+
+    btn.textContent = '🔄 Re-analyze';
+    btn.disabled = false;
+
+  } catch (err) {
+    tipsEl.innerHTML = `<div style="color:var(--red);font-size:0.85rem;padding:12px">Something went wrong. Please try again.</div>`;
+    btn.textContent = '✨ Analyze My Resume with AI';
+    btn.disabled = false;
+  }
+}
+
+
 function downloadPDF() {
   syncFormToData();
   const printArea = document.getElementById('print-area');
   printArea.innerHTML = buildResumeHTML(currentTemplate);
   printArea.style.display = 'block';
 
+  const watermarkHTML = !state.isPremium ? `
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:4rem;font-weight:900;color:rgba(26,39,68,0.08);white-space:nowrap;pointer-events:none;z-index:9999;font-family:sans-serif;letter-spacing:4px;">
+      CVBuilder Pro — Free Version
+    </div>` : '';
+
+  printArea.innerHTML = watermarkHTML + buildResumeHTML(currentTemplate);
+
   const style = document.createElement('style');
   style.id = 'print-style';
   style.textContent = `
     @media print {
       body > * { display: none !important; }
-      #print-area { display: block !important; font-family: 'DM Sans', sans-serif; }
+      #print-area { display: block !important; font-family: 'DM Sans', sans-serif; position: relative; }
       @page { margin: 0.8cm; size: A4; }
     }
   `;
@@ -1516,7 +1580,11 @@ function downloadPDF() {
     document.getElementById('print-style')?.remove();
   }, 1000);
 
-  showToast('Opening print dialog — choose "Save as PDF"!');
+  if (!state.isPremium) {
+    showToast('💡 Upgrade to Pro to remove the watermark!');
+  } else {
+    showToast('Opening print dialog — choose "Save as PDF"!');
+  }
 }
 
 // ============================================================
